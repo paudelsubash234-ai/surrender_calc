@@ -84,9 +84,6 @@
     .reset-btn:hover { border-color:var(--red); color:var(--red); background:var(--red-light); }
     .reset-btn:active { transform:scale(0.98); }
 
-    .premium-hint { font-size:11px; color:var(--text3); font-weight:600; padding:8px 14px; background:var(--surface2); border-radius:8px; border:1px solid var(--border); }
-    .premium-hint strong { color:var(--accent); font-family:'DM Mono',monospace; }
-
     /* breakdown */
     .breakdown-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:14px; margin-top:20px; }
     @media(min-width:600px){ .breakdown-grid { grid-template-columns:repeat(3,1fr); } }
@@ -216,7 +213,6 @@
                 <label class="form-label">
                   <svg width="8" height="8" viewBox="0 0 8 8" fill="#f97316"><circle cx="4" cy="4" r="4"/></svg>
                   First Unpaid Premium (FUP)
-                  <span style="font-size:8px;opacity:0.7;font-weight:600">(day = DOC day)</span>
                 </label>
                 <div class="date-row-2">
                   <select id="fupYear" onchange="onInputChange()"></select>
@@ -276,7 +272,6 @@
                   <span class="pfx">रू</span>
                   <input type="number" id="premiumAmount" placeholder="e.g. 25000" oninput="onInputChange()"/>
                 </div>
-                <div class="premium-hint" id="premiumHint">Enter DOC, FUP &amp; premium to see total paid</div>
               </div>
             </div>
 
@@ -362,9 +357,9 @@
               <div class="result-sub" id="rNetSub">Final Liquidation Amount</div>
             </div>
 
-            <div class="result-divider"></div>
+            <div class="result-divider" id="loanDivider"></div>
 
-            <div class="loan-box">
+            <div class="loan-box" id="loanBox">
               <div class="loan-box-label">Total Loan Payable</div>
               <div class="loan-box-value" id="rLoan">—</div>
               <div class="loan-box-badge">
@@ -553,8 +548,8 @@ function init() {
   populateSelect('docMonth', MONTHS,    '');
   populateSelect('docDay',   days,      '');
 
-  // FUP — blank
-  populateSelect('fupYear',  fupYears,  '');
+  // FUP year only — month and day same as DOC
+  populateSelect('fupYear',  fupYears,  today.getFullYear());
   populateSelect('fupMonth', MONTHS,    '');
 
   // Calc date — today
@@ -562,14 +557,11 @@ function init() {
   populateSelect('calcMonth', MONTHS,    today.getMonth()+1);
   populateSelect('calcDay',   days,      today.getDate());
 
-  // Add blank leading option for DOC and FUP so they appear unselected
+  // Add blank leading option for DOC and FUP year so they appear unselected
   addBlankOption('docYear',  '-- Year --');
   addBlankOption('docMonth', '-- Month --');
   addBlankOption('docDay',   '-- Day --');
-  addBlankOption('fupYear',  '-- Year --');
   addBlankOption('fupMonth', '-- Month --');
-
-  updatePremiumHint();
 }
 
 function addBlankOption(id, label) {
@@ -596,7 +588,7 @@ function resetForm() {
   document.getElementById('docMonth').value = '';
   document.getElementById('docDay').value   = '';
 
-  // FUP — blank
+  // FUP — blank year only
   document.getElementById('fupYear').value  = '';
   document.getElementById('fupMonth').value = '';
 
@@ -619,8 +611,6 @@ function resetForm() {
   document.getElementById('breakdownSection').style.display  = 'none';
   document.getElementById('resultPlaceholder').style.display = '';
   document.getElementById('resultPanel').style.display       = 'none';
-
-  updatePremiumHint();
 }
 
 // ============================================================
@@ -651,19 +641,11 @@ function getPolicyDuration(totalFullMonths) {
 
 // ============================================================
 // FULL MONTHS FROM DOC TO FUP
-// FUP day = same as DOC day.
-// Full months = how many complete calendar months have elapsed
-// between DOC date and FUP date (year/month from input, day same as DOC).
+// FUP day same as DOC day; year and month from input.
 // ============================================================
 function calcFullMonthsDOCtoFUP(docYear, docMonth, docDay, fupYear, fupMonth) {
-  // FUP effective date has same day as DOC
-  const docDate = new Date(docYear, docMonth-1, docDay);
-  const fupDate = new Date(fupYear, fupMonth-1, docDay); // same day
-
-  // Full months elapsed
-  let months = (fupYear - docYear)*12 + (fupMonth - docMonth);
-  if (months < 0) months = 0;
-  return months;
+  const months = (fupYear - docYear)*12 + (fupMonth - docMonth);
+  return Math.max(0, months);
 }
 
 // ============================================================
@@ -675,38 +657,8 @@ function calcInstalmentsPaid(fullMonths, frequency) {
   return Math.floor(fullMonths / frequency);
 }
 
-// ============================================================
-// PREMIUM HINT (live update)
-// ============================================================
 function onInputChange() {
-  updatePremiumHint();
-}
-
-function updatePremiumHint() {
-  const docYear   = Number(document.getElementById('docYear').value);
-  const docMonth  = Number(document.getElementById('docMonth').value);
-  const docDay    = Number(document.getElementById('docDay').value);
-  const fupYear   = Number(document.getElementById('fupYear').value);
-  const fupMonth  = Number(document.getElementById('fupMonth').value);
-  const premium   = Number(document.getElementById('premiumAmount').value);
-  const hint      = document.getElementById('premiumHint');
-
-  if (!docYear || !docMonth || !docDay || !fupYear || !fupMonth) {
-    hint.innerHTML = 'Enter DOC, FUP &amp; premium to see total paid';
-    return;
-  }
-
-  const freq       = MODE_FREQUENCY[paymentMode];
-  const fullMonths = calcFullMonthsDOCtoFUP(docYear, docMonth, docDay, fupYear, fupMonth);
-  const instCount  = calcInstalmentsPaid(fullMonths, freq);
-  const totalPaid  = premium ? premium * instCount : null;
-
-  const modeLabel = paymentMode==='Yearly'?'yearly': paymentMode==='Half-Yearly'?'half-yearly':'quarterly';
-  let html = `${getPolicyDuration(fullMonths)} → <strong>${instCount}</strong> ${modeLabel} instalments`;
-  if (totalPaid !== null && premium) {
-    html += ` = Total paid: <strong>रू ${fmtCurrency(totalPaid, 2)}</strong>`;
-  }
-  hint.innerHTML = html;
+  // no-op
 }
 
 // ============================================================
@@ -772,6 +724,7 @@ function calculate() {
   const docMonth  = Number(document.getElementById('docMonth').value);
   const docDay    = Number(document.getElementById('docDay').value);
   const fupYear   = Number(document.getElementById('fupYear').value);
+  // FUP month inputable; day same as DOC
   const fupMonth  = Number(document.getElementById('fupMonth').value);
   const calcYear  = Number(document.getElementById('calcYear').value);
   const calcMonth = Number(document.getElementById('calcMonth').value);
@@ -783,9 +736,9 @@ function calculate() {
     return;
   }
 
-  const freq = MODE_FREQUENCY[paymentMode]; // 12, 6, or 3
+  const freq = MODE_FREQUENCY[paymentMode];
 
-  // ---- Full months DOC → FUP (FUP day = DOC day) ----
+  // ---- Full months DOC → FUP (FUP day same as DOC day) ----
   const fullMonthsPaid = calcFullMonthsDOCtoFUP(docYear, docMonth, docDay, fupYear, fupMonth);
   const instCount      = calcInstalmentsPaid(fullMonthsPaid, freq);
   const totalPremiumsPaid = premiumPerInstalment * instCount;
@@ -916,7 +869,7 @@ function updateUI(r) {
   document.getElementById('bFactor').textContent       = M ? 'Maturity (Full SA)' : `${r.baseFactor.toFixed(2)} / ${r.monthlyAdjustment.toFixed(3)}`;
   document.getElementById('bFactorSub').textContent    = M ? 'No discount applied' : 'Yearly / Monthly factor';
   document.getElementById('bPremiums').textContent     = fmtCurrency(r.totalPremiumsPaid, 2);
-  document.getElementById('bPremiumsSub').textContent  = `${r.instCount} instalments × रू ${fmtCurrency(r.premiumPerInstalment)}`;
+  document.getElementById('bPremiumsSub').textContent  = 'Capital invested till date';
   document.getElementById('breakdownSection').style.display = 'block';
 
   // Result panel
@@ -929,6 +882,8 @@ function updateUI(r) {
   document.getElementById('rNetSub').textContent     = M ? 'Final Maturity Payout' : 'Final Liquidation Amount';
   document.getElementById('rLoan').textContent       = fmtCurrency(r.loanPayable, 2);
   document.getElementById('rLoanBadge').textContent  = r.isReducedPaidUp ? 'Reduced Paid-up (85%)' : 'Inforce (90%)';
+  document.getElementById('loanBox').style.display   = M ? 'none' : '';
+  document.getElementById('loanDivider').style.display = M ? 'none' : '';
 
   document.getElementById('resultPlaceholder').style.display = 'none';
   const panel = document.getElementById('resultPanel');
@@ -962,8 +917,6 @@ function updateUI(r) {
   document.getElementById('pNetSV').textContent        = fmtCurrency(r.netValue, 2);
   document.getElementById('pLoan').textContent         = fmtCurrency(r.loanPayable, 2);
   document.getElementById('pDuration').textContent     = getPolicyDuration(r.fullMonthsPaid);
-
-  updatePremiumHint();
 }
 
 window.addEventListener('DOMContentLoaded', init);
