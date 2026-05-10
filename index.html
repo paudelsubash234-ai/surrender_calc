@@ -1,0 +1,972 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Insurance Surrender Calculator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #f4f3ef; --surface: #ffffff; --surface2: #f8f7f4;
+      --border: #e4e2dc; --text: #1a1917; --text2: #6b6860; --text3: #a09e98;
+      --accent: #3d5af1; --accent-dark: #2d48d6; --accent-light: #eef0fd;
+      --accent-glow: rgba(61,90,241,0.15); --red: #e84040; --red-light: #fff0f0;
+      --radius: 20px; --radius-sm: 12px;
+      --shadow: 0 2px 16px rgba(0,0,0,0.07); --shadow-lg: 0 8px 40px rgba(0,0,0,0.10);
+    }
+    body { font-family:'Space Grotesk',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; padding-bottom:60px; }
+
+    nav { height:60px; background:rgba(255,255,255,0.85); backdrop-filter:blur(12px); border-bottom:1px solid var(--border); display:flex; align-items:center; padding:0 32px; justify-content:space-between; position:sticky; top:0; z-index:100; }
+    .nav-logo { display:flex; align-items:center; gap:10px; font-weight:700; font-size:15px; letter-spacing:-0.02em; }
+    .nav-icon { width:34px; height:34px; background:var(--accent); border-radius:9px; display:flex; align-items:center; justify-content:center; color:white; }
+    .nav-logo span.blue { color:var(--accent); }
+
+    .container { max-width:1200px; margin:0 auto; padding:48px 24px 0; }
+    .page-header { margin-bottom:40px; }
+    .page-header h1 { font-size:clamp(28px,5vw,44px); font-weight:700; letter-spacing:-0.03em; line-height:1.1; margin-bottom:12px; }
+    .page-header h1 span { color:var(--accent); }
+    .page-header p { color:var(--text2); font-size:15px; max-width:520px; line-height:1.6; font-weight:500; }
+
+    .grid { display:grid; grid-template-columns:1fr; gap:24px; }
+    @media(min-width:1024px){ .grid { grid-template-columns:7fr 5fr; } }
+
+    .card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden; }
+    .card-header { padding:20px 28px; border-bottom:1px solid var(--border); background:var(--surface2); display:flex; align-items:center; gap:8px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.15em; color:var(--text2); }
+    .card-header svg { color:var(--accent); }
+    .card-body { padding:28px; }
+
+    .form-grid { display:grid; grid-template-columns:1fr; gap:28px; }
+    @media(min-width:600px){ .form-grid { grid-template-columns:1fr 1fr; } }
+    .form-group { display:flex; flex-direction:column; gap:10px; }
+    .form-label { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.15em; color:var(--text2); display:flex; align-items:center; gap:6px; }
+    .form-label svg { color:var(--accent); }
+
+    select, input[type="number"] { width:100%; height:52px; background:var(--surface2); border:1.5px solid var(--border); border-radius:var(--radius-sm); padding:0 16px; font-family:'Space Grotesk',sans-serif; font-size:16px; font-weight:600; color:var(--text); outline:none; appearance:none; transition:all 0.15s; }
+    select:focus, input[type="number"]:focus { background:white; border-color:var(--accent); box-shadow:0 0 0 4px var(--accent-glow); }
+    input[type="number"] { font-family:'DM Mono',monospace; }
+    input[type="number"]::-webkit-outer-spin-button,
+    input[type="number"]::-webkit-inner-spin-button { -webkit-appearance:none; }
+    input[type="number"] { -moz-appearance:textfield; }
+
+    /* placeholder style for empty inputs */
+    input::placeholder { color:var(--text3); font-weight:400; }
+
+    .input-prefix { position:relative; }
+    .input-prefix .pfx { position:absolute; left:14px; top:50%; transform:translateY(-50%); font-weight:700; color:var(--text3); pointer-events:none; font-size:15px; }
+    .input-prefix input { padding-left:36px; }
+
+    .date-row { display:flex; gap:8px; }
+    .date-row select { height:46px; font-size:13px; padding:0 8px; }
+    .date-row select:first-child { flex:1; }
+    .date-row select:nth-child(2) { flex:2.2; }
+    .date-row select:last-child { flex:1; }
+
+    .date-row-2 { display:flex; gap:8px; }
+    .date-row-2 select { height:46px; font-size:13px; padding:0 8px; }
+    .date-row-2 select:first-child { flex:1; }
+    .date-row-2 select:last-child { flex:2.2; }
+
+    .divider { height:1px; background:var(--border); margin:4px 0; }
+
+    .mode-buttons { display:flex; gap:8px; }
+    .mode-btn { flex:1; padding:10px 4px; border-radius:10px; border:1.5px solid var(--border); background:white; font-family:'Space Grotesk',sans-serif; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.1em; color:var(--text3); cursor:pointer; transition:all 0.15s; }
+    .mode-btn:hover { border-color:var(--accent); color:var(--text); }
+    .mode-btn.active { background:var(--accent); border-color:var(--accent); color:white; box-shadow:0 4px 12px var(--accent-glow); }
+
+    .action-row { display:flex; gap:12px; }
+    .calc-btn { flex:1; height:50px; background:var(--accent); color:white; border:none; border-radius:var(--radius-sm); font-family:'Space Grotesk',sans-serif; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.12em; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; transition:all 0.15s; box-shadow:0 4px 20px var(--accent-glow); }
+    .calc-btn:hover { background:var(--accent-dark); transform:translateY(-1px); }
+    .calc-btn:active { transform:scale(0.98); }
+
+    .reset-btn { height:50px; padding:0 20px; background:white; color:var(--text2); border:1.5px solid var(--border); border-radius:var(--radius-sm); font-family:'Space Grotesk',sans-serif; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.12em; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; transition:all 0.15s; white-space:nowrap; }
+    .reset-btn:hover { border-color:var(--red); color:var(--red); background:var(--red-light); }
+    .reset-btn:active { transform:scale(0.98); }
+
+    .premium-hint { font-size:11px; color:var(--text3); font-weight:600; padding:8px 14px; background:var(--surface2); border-radius:8px; border:1px solid var(--border); }
+    .premium-hint strong { color:var(--accent); font-family:'DM Mono',monospace; }
+
+    /* breakdown */
+    .breakdown-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:14px; margin-top:20px; }
+    @media(min-width:600px){ .breakdown-grid { grid-template-columns:repeat(3,1fr); } }
+    .breakdown-card { background:white; border:1.5px solid var(--border); border-radius:16px; padding:18px; }
+    .breakdown-card.accent { border-color:var(--accent); background:var(--accent-light); }
+    .breakdown-card-label { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:0.15em; color:var(--text3); margin-bottom:10px; }
+    .breakdown-card-value { font-family:'DM Mono',monospace; font-size:18px; font-weight:500; color:var(--text); letter-spacing:-0.02em; }
+    .breakdown-card.accent .breakdown-card-value { color:var(--accent-dark); }
+    .breakdown-card-sub { font-size:8px; color:var(--text3); margin-top:8px; padding-top:8px; border-top:1px solid var(--border); font-weight:600; text-transform:uppercase; letter-spacing:0.08em; }
+
+    /* result panel */
+    .result-panel { background:var(--accent); border-radius:28px; padding:36px; color:white; position:relative; overflow:hidden; box-shadow:var(--shadow-lg),0 0 0 1px rgba(255,255,255,0.1) inset; }
+    .result-panel::before { content:''; position:absolute; top:-60px; right:-60px; width:200px; height:200px; background:rgba(255,255,255,0.06); border-radius:50%; }
+    .result-panel::after { content:''; position:absolute; bottom:20%; left:-50px; width:160px; height:160px; background:rgba(99,132,255,0.25); border-radius:50%; filter:blur(40px); }
+    .result-panel-inner { position:relative; z-index:1; }
+    .result-panel h2 { font-size:20px; font-weight:700; letter-spacing:-0.02em; margin-bottom:20px; }
+
+    .maturity-badge { display:inline-flex; align-items:center; gap:5px; background:rgba(45,158,107,0.3); border:1px solid rgba(45,158,107,0.5); color:#afffde; border-radius:20px; padding:4px 12px; font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:0.14em; margin-bottom:14px; }
+
+    .result-row { background:rgba(255,255,255,0.08); border-radius:14px; padding:16px; margin-bottom:12px; }
+    .result-row-label { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:0.2em; opacity:0.6; margin-bottom:6px; }
+    .result-row-value { font-family:'DM Mono',monospace; font-size:26px; font-weight:500; letter-spacing:-0.02em; }
+    .result-row-value.red { color:#ffa3a3; }
+    .result-row.highlight { background:white; box-shadow:0 4px 20px rgba(0,0,0,0.15); }
+    .result-row.highlight .result-row-label { color:var(--accent); opacity:1; }
+    .result-row.highlight .result-row-value { color:#1a2566; font-size:38px; }
+    .result-row.highlight .result-sub { font-size:9px; font-weight:700; color:var(--text3); text-transform:uppercase; letter-spacing:0.15em; margin-top:8px; padding-top:8px; border-top:1px solid var(--border); }
+
+    .result-divider { height:1px; background:rgba(255,255,255,0.12); margin:20px 0; }
+    .loan-box { background:rgba(99,132,255,0.35); border-radius:20px; padding:20px; border:1px solid rgba(255,255,255,0.1); }
+    .loan-box-label { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:0.2em; opacity:0.7; margin-bottom:8px; }
+    .loan-box-value { font-family:'DM Mono',monospace; font-size:32px; font-weight:500; letter-spacing:-0.02em; }
+    .loan-box-badge { display:inline-flex; align-items:center; gap:5px; font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:0.1em; opacity:0.6; margin-top:10px; }
+
+    .result-placeholder { background:white; border:2px dashed var(--border); border-radius:28px; padding:60px 36px; text-align:center; color:var(--text3); }
+    .result-placeholder svg { margin:0 auto 16px; display:block; opacity:0.3; }
+    .result-placeholder p { font-size:14px; font-weight:600; }
+    .result-placeholder span { font-size:12px; display:block; margin-top:6px; }
+
+    @media print {
+      body { background:white; padding:0; }
+      nav,.container { display:none !important; }
+      #print-quotation { display:block !important; }
+    }
+    #print-quotation { display:none; font-family:'Courier New',monospace; font-size:11px; line-height:1.7; padding:40px; background:white; }
+    .print-heading { text-align:center; font-size:14px; font-weight:bold; text-transform:uppercase; letter-spacing:0.2em; border-bottom:2px solid black; padding-bottom:8px; margin-bottom:20px; }
+    .print-box { border:1px solid black; padding:16px; }
+    .print-row { display:flex; justify-content:space-between; margin-bottom:4px; }
+    .print-grid { display:grid; grid-template-columns:1fr 1fr; gap:24px; }
+    .print-divider { border:none; border-top:1px dashed black; margin:12px 0; }
+    .print-total { border-top:2px solid black; padding-top:12px; margin-top:16px; }
+    .print-note { font-size:9px; color:#555; margin-top:24px; font-style:italic; }
+
+    @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
+    .animate-in { animation:fadeIn 0.25s ease-out forwards; }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">
+    <div class="nav-icon">
+      <svg width="18" height="18" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+    </div>
+    INSURANCE<span class="blue">PRO</span>
+  </div>
+</nav>
+
+<div class="container">
+  <div class="page-header">
+    <h1>Surrender Value <span>Wizard</span></h1>
+    <p>Precise analytical tool for determining liquidation or maturity value of endowment and life policies based on premium history and bonus accumulations.</p>
+  </div>
+
+  <div class="grid">
+    <!-- LEFT -->
+    <div>
+      <div class="card">
+        <div class="card-header">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="7" x2="16" y2="7"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="17" x2="13" y2="17"/></svg>
+          Policy Parameters
+        </div>
+        <div class="card-body">
+          <div style="display:flex;flex-direction:column;gap:28px;">
+
+            <!-- Plan + Term -->
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="form-label">
+                  <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                  Policy Plan Type
+                </label>
+                <select id="planId">
+                  <option value="333">333 – Endowment Assurance</option>
+                  <option value="342" selected>342 – Jeevan Anand</option>
+                  <option value="345">345 – Jeevan Tara</option>
+                  <option value="349">349 – Children's Endowment</option>
+                  <option value="357">357 – Jeevan Sathi</option>
+                  <option value="360">360 – New Jeevan</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">
+                  <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                  Policy Term (Years)
+                </label>
+                <input type="number" id="policyTerm" value="15" min="1" max="40" oninput="onInputChange()"/>
+              </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <!-- DOC + FUP -->
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="form-label">
+                  <svg width="8" height="8" viewBox="0 0 8 8" fill="var(--accent)"><circle cx="4" cy="4" r="4"/></svg>
+                  Date of Commencement (DOC)
+                </label>
+                <div class="date-row">
+                  <select id="docYear" onchange="onInputChange()"></select>
+                  <select id="docMonth" onchange="onInputChange()"></select>
+                  <select id="docDay" onchange="onInputChange()"></select>
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">
+                  <svg width="8" height="8" viewBox="0 0 8 8" fill="#f97316"><circle cx="4" cy="4" r="4"/></svg>
+                  First Unpaid Premium (FUP)
+                  <span style="font-size:8px;opacity:0.7;font-weight:600">(day = DOC day)</span>
+                </label>
+                <div class="date-row-2">
+                  <select id="fupYear" onchange="onInputChange()"></select>
+                  <select id="fupMonth" onchange="onInputChange()"></select>
+                </div>
+              </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <!-- Calc date + Mode -->
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="form-label">
+                  <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                  Calculation Date
+                </label>
+                <div class="date-row">
+                  <select id="calcYear"></select>
+                  <select id="calcMonth"></select>
+                  <select id="calcDay"></select>
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">
+                  <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+                  Mode of Payment
+                </label>
+                <div class="mode-buttons">
+                  <button class="mode-btn active" data-mode="Yearly" onclick="setMode('Yearly',this)">Yearly</button>
+                  <button class="mode-btn" data-mode="Half-Yearly" onclick="setMode('Half-Yearly',this)">Half-Yearly</button>
+                  <button class="mode-btn" data-mode="Quarterly" onclick="setMode('Quarterly',this)">Quarterly</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <!-- Sum Assured + Premium -->
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="form-label">
+                  <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+                  Sum Assured
+                </label>
+                <div class="input-prefix">
+                  <span class="pfx">रू</span>
+                  <input type="number" id="sumAssured" placeholder="e.g. 500000" oninput="onInputChange()"/>
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">
+                  <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                  Premium (per instalment)
+                </label>
+                <div class="input-prefix">
+                  <span class="pfx">रू</span>
+                  <input type="number" id="premiumAmount" placeholder="e.g. 25000" oninput="onInputChange()"/>
+                </div>
+                <div class="premium-hint" id="premiumHint">Enter DOC, FUP &amp; premium to see total paid</div>
+              </div>
+            </div>
+
+            <div class="action-row">
+              <button class="calc-btn" onclick="calculate()">
+                <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="7" x2="16" y2="7"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="17" x2="13" y2="17"/></svg>
+                Calculate Now
+              </button>
+              <button class="reset-btn" onclick="resetForm()">
+                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.87"/></svg>
+                Reset
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Breakdown Cards -->
+      <div id="breakdownSection" style="display:none">
+        <div class="breakdown-grid">
+          <div class="breakdown-card">
+            <div class="breakdown-card-label">Paid Up Sum Assured</div>
+            <div class="breakdown-card-value" id="bPaidUp">—</div>
+            <div class="breakdown-card-sub">(SA / Term) × Yrs Paid</div>
+          </div>
+          <div class="breakdown-card">
+            <div class="breakdown-card-label">Vested Bonus</div>
+            <div class="breakdown-card-value" id="bVested">—</div>
+            <div class="breakdown-card-sub" id="bVestedSub">Announced bonus years</div>
+          </div>
+          <div class="breakdown-card">
+            <div class="breakdown-card-label" id="bInterimLabel">Interim Bonus</div>
+            <div class="breakdown-card-value" id="bInterim">—</div>
+            <div class="breakdown-card-sub" id="bInterimSub">Unannounced partial year</div>
+          </div>
+          <div class="breakdown-card accent">
+            <div class="breakdown-card-label" id="bPaidUpValueLabel">Paid-up Value</div>
+            <div class="breakdown-card-value" id="bPaidUpValue">—</div>
+            <div class="breakdown-card-sub" id="bPaidUpValueSub">Paid-up SA + Total Bonus</div>
+          </div>
+          <div class="breakdown-card">
+            <div class="breakdown-card-label" id="bFactorLabel">Surrender Factor</div>
+            <div class="breakdown-card-value" id="bFactor">—</div>
+            <div class="breakdown-card-sub" id="bFactorSub">Yearly / Monthly factor</div>
+          </div>
+          <div class="breakdown-card">
+            <div class="breakdown-card-label">Total Premiums Paid</div>
+            <div class="breakdown-card-value" id="bPremiums">—</div>
+            <div class="breakdown-card-sub" id="bPremiumsSub">Instalments × premium</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT -->
+    <div>
+      <div class="result-placeholder" id="resultPlaceholder">
+        <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="7" x2="16" y2="7"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="17" x2="13" y2="17"/></svg>
+        <p>Results will appear here</p>
+        <span>Fill in your policy details and click Calculate</span>
+      </div>
+
+      <div id="resultPanel" style="display:none">
+        <div class="result-panel animate-in">
+          <div class="result-panel-inner">
+            <div id="maturityBadge" style="display:none" class="maturity-badge">
+              <svg width="7" height="7" viewBox="0 0 8 8" fill="#afffde"><circle cx="4" cy="4" r="4"/></svg>
+              Maturity Benefit
+            </div>
+            <h2>Financial Summary</h2>
+
+            <div class="result-row">
+              <div class="result-row-label" id="rGrossLabel">Gross Surrender Value</div>
+              <div class="result-row-value" id="rGross">—</div>
+            </div>
+            <div class="result-row">
+              <div class="result-row-label">TDS Deduction (5%)</div>
+              <div class="result-row-value red" id="rTDS">—</div>
+            </div>
+            <div class="result-row highlight">
+              <div class="result-row-label" id="rNetLabel">Net Surrender Value</div>
+              <div class="result-row-value" id="rNet">—</div>
+              <div class="result-sub" id="rNetSub">Final Liquidation Amount</div>
+            </div>
+
+            <div class="result-divider"></div>
+
+            <div class="loan-box">
+              <div class="loan-box-label">Total Loan Payable</div>
+              <div class="loan-box-value" id="rLoan">—</div>
+              <div class="loan-box-badge">
+                <svg width="6" height="6" viewBox="0 0 6 6" fill="white"><circle cx="3" cy="3" r="3"/></svg>
+                <span id="rLoanBadge">Inforce (90%)</span>
+              </div>
+            </div>
+            <!-- Print button hidden as per requirement -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Print layout (print-only, no button trigger) -->
+<div id="print-quotation">
+  <div class="print-heading" id="pHeading">Surrender / Loan Quotation</div>
+  <div class="print-box">
+    <div class="print-grid">
+      <div>
+        <div class="print-row"><span>Policy No :</span><strong>—</strong></div>
+        <div class="print-row"><span>Name :</span><strong>—</strong></div>
+        <div class="print-row"><span>Address :</span><strong>NEPAL</strong></div>
+      </div>
+      <div>
+        <div class="print-row"><span>Quotation Date :</span><span id="pCalcDate">—</span></div>
+      </div>
+    </div>
+    <hr class="print-divider">
+    <div class="print-grid">
+      <div>
+        <div class="print-row"><span>D.O.C</span><span id="pDOC">—</span></div>
+        <div class="print-row"><span>F.U.P</span><span id="pFUP">—</span></div>
+        <div class="print-row"><span>PLAN/TERM</span><span id="pPlanTerm">—</span></div>
+        <div class="print-row"><strong>MODE</strong><strong id="pMode">—</strong></div>
+        <div class="print-row"><span>INSTALMENTS PAID</span><span id="pInstCount">—</span></div>
+        <div class="print-row"><span>PRMPAID</span><span id="pPrmPaid">—</span></div>
+      </div>
+      <div>
+        <div class="print-row"><strong>SUM ASSURED</strong><strong><u id="pSA">—</u></strong></div>
+        <div class="print-row"><span>INSTALMENT PREM</span><span id="pInstPrem">—</span></div>
+        <div class="print-row"><span>RIDER PREMIUM</span><span>0.00</span></div>
+      </div>
+    </div>
+    <hr class="print-divider">
+    <div class="print-grid">
+      <div>
+        <div class="print-row"><span>PAIDUP SUM ASSD</span><span id="pPaidUpSA">—</span></div>
+        <div class="print-row"><span>VESTED BONUS</span><span id="pVested">—</span></div>
+        <div class="print-row"><span id="pInterimLabel">INTERIM BONUS</span><span id="pInterim">—</span></div>
+        <div class="print-row"><strong id="pPaidUpValLabel">PAIDUP VALUE</strong><strong id="pPaidUpVal">—</strong></div>
+      </div>
+      <div>
+        <div class="print-row" style="color:red"><span id="pTDSLabel">TDS on Surr. Amt</span><span id="pTDS">—</span></div>
+      </div>
+    </div>
+    <div class="print-total">
+      <div class="print-row" style="font-size:13px;font-weight:bold;text-decoration:underline">
+        <span id="pNetLabel">NET SV PAYABLE</span><span id="pNetSV">—</span>
+      </div>
+      <div class="print-row" style="margin-top:8px;padding-top:8px;border-top:1px solid #ccc">
+        <span>GROSS LOAN PAYABLE</span><span id="pLoan">—</span>
+      </div>
+    </div>
+  </div>
+  <div style="margin-top:24px">
+    <strong>Duration of Policy:</strong> <u id="pDuration">—</u>
+  </div>
+  <div class="print-note">Note: This quotation is for comparison only. Please verify data manually.</div>
+</div>
+
+<script>
+// ============================================================
+// BONUS CHARTS
+// ============================================================
+const PLAN_BONUS_CHARTS = {
+  "333":{
+    5: {2002:43,2003:52,2004:52,2005:43,2006:52,2007:52,2008:52,2009:56,2010:56,2011:56,2012:56,2013:61,2014:61,2015:61,2016:61,2017:61,2018:66,2019:66,2020:54,2021:50,2022:51,2023:51,2024:51,2025:49},
+    10:{2002:43,2003:52,2004:52,2005:43,2006:52,2007:52,2008:52,2009:56,2010:56,2011:56,2012:56,2013:61,2014:61,2015:61,2016:61,2017:61,2018:66,2019:66,2020:55,2021:51,2022:52,2023:52,2024:52,2025:50},
+    15:{2002:43,2003:52,2004:52,2005:43,2006:52,2007:52,2008:52,2009:56,2010:56,2011:56,2012:56,2013:61,2014:61,2015:61,2016:61,2017:61,2018:66,2019:66,2020:56,2021:52,2022:53,2023:53,2024:53,2025:51},
+    16:{2002:47,2003:52,2004:52,2005:47,2006:52,2007:52,2008:52,2009:56,2010:56,2011:56,2012:56,2013:61,2014:61,2015:61,2016:61,2017:61,2018:66,2019:66,2020:56,2021:52,2022:53,2023:53,2024:53,2025:51},
+    20:{2002:47,2003:55,2004:55,2005:47,2006:55,2007:55,2008:55,2009:58,2010:58,2011:58,2012:58,2013:65,2014:65,2015:65,2016:65,2017:65,2018:70,2019:70,2020:60,2021:55,2022:55,2023:55,2024:55,2025:55},
+    21:{2002:53,2003:55,2004:55,2005:53,2006:55,2007:55,2008:55,2009:58,2010:58,2011:58,2012:58,2013:65,2014:65,2015:65,2016:65,2017:65,2018:70,2019:70,2020:60,2021:55,2022:55,2023:55,2024:55,2025:55},
+    25:{2002:53,2003:70,2004:70,2005:53,2006:70,2007:70,2008:70,2009:71,2010:71,2011:71,2012:71,2013:75,2014:75,2015:75,2016:75,2017:75,2018:80,2019:80,2020:70,2021:64,2022:61,2023:61,2024:61,2025:60},
+  },
+  "342":{
+    5: {2002:43,2003:52,2004:52,2005:43,2006:52,2007:52,2008:52,2009:56,2010:56,2011:56,2012:56,2013:61,2014:61,2015:61,2016:61,2017:61,2018:66,2019:66,2020:55,2021:39,2022:50,2023:50,2024:50,2025:50},
+    10:{2002:43,2003:52,2004:52,2005:43,2006:52,2007:52,2008:52,2009:56,2010:56,2011:56,2012:56,2013:61,2014:61,2015:61,2016:61,2017:61,2018:66,2019:66,2020:55,2021:39,2022:52,2023:52,2024:52,2025:51},
+    15:{2002:43,2003:52,2004:52,2005:43,2006:52,2007:52,2008:52,2009:56,2010:56,2011:56,2012:56,2013:61,2014:61,2015:61,2016:61,2017:61,2018:66,2019:66,2020:58,2021:41,2022:55,2023:55,2024:55,2025:51},
+    16:{2002:47,2003:52,2004:52,2005:47,2006:52,2007:52,2008:52,2009:56,2010:56,2011:56,2012:56,2013:61,2014:61,2015:61,2016:61,2017:61,2018:66,2019:66,2020:58,2021:41,2022:55,2023:55,2024:55,2025:53},
+    20:{2002:47,2003:55,2004:55,2005:47,2006:55,2007:55,2008:55,2009:58,2010:58,2011:58,2012:58,2013:65,2014:65,2015:65,2016:65,2017:65,2018:70,2019:70,2020:62,2021:43,2022:57,2023:57,2024:57,2025:53},
+    21:{2002:53,2003:55,2004:55,2005:53,2006:55,2007:55,2008:55,2009:58,2010:58,2011:58,2012:58,2013:65,2014:65,2015:65,2016:65,2017:65,2018:70,2019:70,2020:62,2021:43,2022:57,2023:57,2024:57,2025:55},
+    25:{2002:53,2003:70,2004:70,2005:53,2006:70,2007:70,2008:70,2009:71,2010:71,2011:71,2012:71,2013:75,2014:75,2015:75,2016:75,2017:75,2018:80,2019:80,2020:70,2021:49,2022:60,2023:60,2024:60,2025:55},
+  },
+  "345":{
+    10:{2009:56,2010:56,2011:56,2012:56,2013:61,2014:61,2015:61,2016:61,2017:61,2018:66,2019:66,2020:56,2021:52,2022:50,2023:50,2024:50,2025:50},
+    15:{2009:58,2010:58,2011:58,2012:58,2013:63,2014:63,2015:63,2016:63,2017:63,2018:68,2019:68,2020:58,2021:53,2022:51,2023:51,2024:51,2025:51},
+    20:{2009:71,2010:71,2011:71,2012:71,2013:72,2014:72,2015:72,2016:72,2017:72,2018:77,2019:77,2020:67,2021:62,2022:55,2023:55,2024:55,2025:53},
+  },
+  "349":{
+    5: {2007:52,2008:52,2009:56,2010:56,2011:56,2012:56,2013:61,2014:61,2015:61,2016:61,2017:61,2018:66,2019:66,2020:55,2021:51,2022:51,2023:51,2024:51,2025:50},
+    20:{2007:55,2008:55,2009:58,2010:58,2011:58,2012:58,2013:65,2014:65,2015:65,2016:65,2017:65,2018:70,2019:70,2020:60,2021:55,2022:55,2023:55,2024:55,2025:53},
+    25:{2007:70,2008:71,2009:71,2010:71,2011:71,2012:71,2013:75,2014:75,2015:75,2016:75,2017:75,2018:80,2019:80,2020:68,2021:63,2022:63,2023:63,2024:63,2025:63},
+  },
+  "357":{
+    5: {2019:66,2020:54,2021:50,2022:51,2023:51,2024:51,2025:50},
+    10:{2019:66,2020:55,2021:51,2022:52,2023:52,2024:52,2025:51},
+    15:{2019:66,2020:56,2021:52,2022:53,2023:53,2024:53,2025:52},
+  },
+  "360":{
+    10:{2021:52,2022:50,2023:50,2024:50,2025:50},
+    15:{2021:53,2022:51,2023:51,2024:51,2025:51},
+    20:{2021:62,2022:55,2023:55,2024:55,2025:55},
+  }
+};
+
+const YEARLY_FACTORS = {
+  0:943.4,1:890,2:839.62,3:792.09,4:747.26,5:704.96,
+  6:665.06,7:627.41,8:591.9,9:558.39,10:526.79,
+  11:496.97,12:468.84,13:442.3,14:417.27,15:393.65,
+  16:371.36,17:350.34,18:330.51,19:311.8,20:294.16,
+  21:277.51,22:261.8,23:246.98,24:233,25:219.81,
+  26:207.37,27:195.63,28:184.56,29:174.11,30:164.25
+};
+const MONTHLY_FACTORS = {
+  0:1.000,1:1.005,2:1.010,3:1.015,4:1.020,5:1.025,
+  6:1.030,7:1.035,8:1.040,9:1.045,10:1.050,11:1.055,12:1.060
+};
+const FISCAL_YEAR_END_DAYS = {
+  2002:16,2003:16,2004:15,2005:15,2006:16,2007:16,
+  2008:15,2009:15,2010:16,2011:16,2012:15,2013:15,
+  2014:16,2015:16,2016:15,2017:15,2018:16,2019:16,
+  2020:15,2021:15,2022:16,2023:16,2024:15,2025:16
+};
+
+// ============================================================
+// MODE FREQUENCY: how many months between instalments
+//   Yearly=12, Half-Yearly=6, Quarterly=3
+// ============================================================
+const MODE_FREQUENCY = { Yearly: 12, 'Half-Yearly': 6, Quarterly: 3 };
+
+// ============================================================
+// STATE
+// ============================================================
+let paymentMode = 'Yearly';
+
+// ============================================================
+// MONTHS LIST
+// ============================================================
+const MONTHS = [
+  {name:'January',val:1},{name:'February',val:2},{name:'March',val:3},
+  {name:'April',val:4},{name:'May',val:5},{name:'June',val:6},
+  {name:'July',val:7},{name:'August',val:8},{name:'September',val:9},
+  {name:'October',val:10},{name:'November',val:11},{name:'December',val:12}
+];
+
+// ============================================================
+// POPULATE SELECT
+// ============================================================
+function populateSelect(id, options, defaultVal) {
+  const sel = document.getElementById(id);
+  if (!sel) return;
+  sel.innerHTML = '';
+  options.forEach(opt => {
+    const o = document.createElement('option');
+    o.value = opt.val !== undefined ? opt.val : opt;
+    o.textContent = opt.name !== undefined ? opt.name : opt;
+    if ((opt.val !== undefined ? opt.val : opt) == defaultVal) o.selected = true;
+    sel.appendChild(o);
+  });
+}
+
+// ============================================================
+// INIT  — only pre-fill plan/term/mode/calc-date; leave SA, premium, DOC, FUP blank
+// ============================================================
+function init() {
+  const today = new Date();
+  const docYears  = Array.from({length:2040-2002+1},(_,i)=>2002+i);
+  const fupYears  = Array.from({length:2050-2002+1},(_,i)=>2002+i);
+  const calcYears = Array.from({length:2050-2002+1},(_,i)=>2002+i);
+  const days      = Array.from({length:31},(_,i)=>i+1);
+
+  // DOC — blank (no default selection highlighted; just populate)
+  populateSelect('docYear',  docYears,  '');
+  populateSelect('docMonth', MONTHS,    '');
+  populateSelect('docDay',   days,      '');
+
+  // FUP — blank
+  populateSelect('fupYear',  fupYears,  '');
+  populateSelect('fupMonth', MONTHS,    '');
+
+  // Calc date — today
+  populateSelect('calcYear',  calcYears, today.getFullYear());
+  populateSelect('calcMonth', MONTHS,    today.getMonth()+1);
+  populateSelect('calcDay',   days,      today.getDate());
+
+  // Add blank leading option for DOC and FUP so they appear unselected
+  addBlankOption('docYear',  '-- Year --');
+  addBlankOption('docMonth', '-- Month --');
+  addBlankOption('docDay',   '-- Day --');
+  addBlankOption('fupYear',  '-- Year --');
+  addBlankOption('fupMonth', '-- Month --');
+
+  updatePremiumHint();
+}
+
+function addBlankOption(id, label) {
+  const sel = document.getElementById(id);
+  if (!sel) return;
+  const blank = document.createElement('option');
+  blank.value = '';
+  blank.textContent = label;
+  blank.selected = true;
+  sel.insertBefore(blank, sel.firstChild);
+}
+
+// ============================================================
+// RESET — plan 342, term 15, today calc, yearly mode; everything else blank
+// ============================================================
+function resetForm() {
+  const today = new Date();
+
+  document.getElementById('planId').value    = '342';
+  document.getElementById('policyTerm').value = '15';
+
+  // DOC — blank
+  document.getElementById('docYear').value  = '';
+  document.getElementById('docMonth').value = '';
+  document.getElementById('docDay').value   = '';
+
+  // FUP — blank
+  document.getElementById('fupYear').value  = '';
+  document.getElementById('fupMonth').value = '';
+
+  // Calc date — today
+  document.getElementById('calcYear').value  = today.getFullYear();
+  document.getElementById('calcMonth').value = today.getMonth()+1;
+  document.getElementById('calcDay').value   = today.getDate();
+
+  // Mode
+  paymentMode = 'Yearly';
+  document.querySelectorAll('.mode-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.mode === 'Yearly')
+  );
+
+  // Financials — blank
+  document.getElementById('sumAssured').value    = '';
+  document.getElementById('premiumAmount').value = '';
+
+  // Hide results
+  document.getElementById('breakdownSection').style.display  = 'none';
+  document.getElementById('resultPlaceholder').style.display = '';
+  document.getElementById('resultPanel').style.display       = 'none';
+
+  updatePremiumHint();
+}
+
+// ============================================================
+// MODE
+// ============================================================
+function setMode(mode, btn) {
+  paymentMode = mode;
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  onInputChange();
+}
+
+// ============================================================
+// UTILS
+// ============================================================
+function fmtCurrency(val, decimals=0) {
+  return Number(val).toLocaleString('en-IN', {minimumFractionDigits:decimals, maximumFractionDigits:decimals});
+}
+
+function getPolicyDuration(totalFullMonths) {
+  const yrs  = Math.floor(totalFullMonths / 12);
+  const mths = totalFullMonths % 12;
+  if (yrs === 0 && mths === 0) return '0 Years 0 Months';
+  if (yrs === 0)  return `${mths} Month${mths!==1?'s':''}`;
+  if (mths === 0) return `${yrs} Year${yrs!==1?'s':''}`;
+  return `${yrs} Year${yrs!==1?'s':''} ${mths} Month${mths!==1?'s':''}`;
+}
+
+// ============================================================
+// FULL MONTHS FROM DOC TO FUP
+// FUP day = same as DOC day.
+// Full months = how many complete calendar months have elapsed
+// between DOC date and FUP date (year/month from input, day same as DOC).
+// ============================================================
+function calcFullMonthsDOCtoFUP(docYear, docMonth, docDay, fupYear, fupMonth) {
+  // FUP effective date has same day as DOC
+  const docDate = new Date(docYear, docMonth-1, docDay);
+  const fupDate = new Date(fupYear, fupMonth-1, docDay); // same day
+
+  // Full months elapsed
+  let months = (fupYear - docYear)*12 + (fupMonth - docMonth);
+  if (months < 0) months = 0;
+  return months;
+}
+
+// ============================================================
+// NUMBER OF INSTALMENTS PAID
+// frequency = 12 (yearly), 6 (half-yearly), 3 (quarterly)
+// instalments = floor(fullMonths / frequency)
+// ============================================================
+function calcInstalmentsPaid(fullMonths, frequency) {
+  return Math.floor(fullMonths / frequency);
+}
+
+// ============================================================
+// PREMIUM HINT (live update)
+// ============================================================
+function onInputChange() {
+  updatePremiumHint();
+}
+
+function updatePremiumHint() {
+  const docYear   = Number(document.getElementById('docYear').value);
+  const docMonth  = Number(document.getElementById('docMonth').value);
+  const docDay    = Number(document.getElementById('docDay').value);
+  const fupYear   = Number(document.getElementById('fupYear').value);
+  const fupMonth  = Number(document.getElementById('fupMonth').value);
+  const premium   = Number(document.getElementById('premiumAmount').value);
+  const hint      = document.getElementById('premiumHint');
+
+  if (!docYear || !docMonth || !docDay || !fupYear || !fupMonth) {
+    hint.innerHTML = 'Enter DOC, FUP &amp; premium to see total paid';
+    return;
+  }
+
+  const freq       = MODE_FREQUENCY[paymentMode];
+  const fullMonths = calcFullMonthsDOCtoFUP(docYear, docMonth, docDay, fupYear, fupMonth);
+  const instCount  = calcInstalmentsPaid(fullMonths, freq);
+  const totalPaid  = premium ? premium * instCount : null;
+
+  const modeLabel = paymentMode==='Yearly'?'yearly': paymentMode==='Half-Yearly'?'half-yearly':'quarterly';
+  let html = `${getPolicyDuration(fullMonths)} → <strong>${instCount}</strong> ${modeLabel} instalments`;
+  if (totalPaid !== null && premium) {
+    html += ` = Total paid: <strong>रू ${fmtCurrency(totalPaid, 2)}</strong>`;
+  }
+  hint.innerHTML = html;
+}
+
+// ============================================================
+// BONUS: vested vs interim logic
+//
+// For each bonus year slot (starting from startingBonusYear):
+//   • If the bonus rate IS in the chart for that year → VESTED (announced, full or partial year counts as vested)
+//   • If the bonus rate is NOT in the chart → INTERIM (unannounced; prorate by months)
+//
+// "yearsForBonus" is the total elapsed years (float) to count bonus for.
+// We iterate year-by-year. For each year:
+//   - full year (12 months elapsed in that year) or partial year (< 12 months):
+//     If announced → add to vested (full rate for full year, prorated for partial year)
+//     If NOT announced → add to interim (prorated only, since bonus not declared yet)
+// ============================================================
+function calcBonus(yearsForBonus, startingBonusYear, termRates, saOver1000) {
+  let vested = 0, interim = 0;
+  const totalMonthsForBonus = yearsForBonus * 12;
+  let monthsRemaining = totalMonthsForBonus;
+  let i = 0;
+
+  while (monthsRemaining > 0) {
+    const bonusYear = startingBonusYear + i;
+    const monthsThisYear = Math.min(12, monthsRemaining);
+    const rate = termRates[bonusYear]; // undefined if not announced
+
+    if (rate !== undefined) {
+      // Announced → vested (full year gets full rate, partial year gets prorated)
+      vested += saOver1000 * rate * (monthsThisYear / 12);
+    } else {
+      // Not announced → interim (prorated)
+      // Use last known rate as estimate, or zero if none
+      // Actually per requirement: unannounced → interim; no known rate → 0
+      // But we still need a rate to prorate. Use the most recently known rate.
+      // Find last known rate for this plan/term:
+      const lastKnownRate = getLastKnownRate(termRates, bonusYear);
+      interim += saOver1000 * (lastKnownRate || 0) * (monthsThisYear / 12);
+    }
+
+    monthsRemaining -= monthsThisYear;
+    i++;
+    if (i > 100) break; // safety
+  }
+
+  return {vested, interim};
+}
+
+function getLastKnownRate(termRates, upToYear) {
+  // Find the most recent year in termRates that is < upToYear
+  const knownYears = Object.keys(termRates).map(Number).filter(y => y < upToYear).sort((a,b)=>b-a);
+  return knownYears.length > 0 ? termRates[knownYears[0]] : 0;
+}
+
+// ============================================================
+// MAIN CALCULATE
+// ============================================================
+function calculate() {
+  const selectedPlanId       = document.getElementById('planId').value;
+  const sumAssured           = Number(document.getElementById('sumAssured').value);
+  const premiumPerInstalment = Number(document.getElementById('premiumAmount').value);
+  const policyTerm           = Number(document.getElementById('policyTerm').value);
+  const docYear   = Number(document.getElementById('docYear').value);
+  const docMonth  = Number(document.getElementById('docMonth').value);
+  const docDay    = Number(document.getElementById('docDay').value);
+  const fupYear   = Number(document.getElementById('fupYear').value);
+  const fupMonth  = Number(document.getElementById('fupMonth').value);
+  const calcYear  = Number(document.getElementById('calcYear').value);
+  const calcMonth = Number(document.getElementById('calcMonth').value);
+  const calcDay   = Number(document.getElementById('calcDay').value);
+
+  // Basic validation
+  if (!sumAssured || !premiumPerInstalment || !docYear || !docMonth || !docDay || !fupYear || !fupMonth) {
+    alert('Please fill in all fields (Sum Assured, Premium, DOC, FUP).');
+    return;
+  }
+
+  const freq = MODE_FREQUENCY[paymentMode]; // 12, 6, or 3
+
+  // ---- Full months DOC → FUP (FUP day = DOC day) ----
+  const fullMonthsPaid = calcFullMonthsDOCtoFUP(docYear, docMonth, docDay, fupYear, fupMonth);
+  const instCount      = calcInstalmentsPaid(fullMonthsPaid, freq);
+  const totalPremiumsPaid = premiumPerInstalment * instCount;
+
+  // yearsPaid as a fraction (for paid-up SA calculation)
+  const yearsPaid = fullMonthsPaid / 12;
+
+  // ---- Maturity check ----
+  const maturityDate    = new Date(docYear + policyTerm, docMonth-1, docDay);
+  const calculationDate = new Date(calcYear, calcMonth-1, calcDay);
+
+  const monthsUntilMaturity = Math.max(0,
+    (maturityDate.getFullYear()-calculationDate.getFullYear())*12 +
+    (maturityDate.getMonth()-calculationDate.getMonth()) -
+    (maturityDate.getDate()<calculationDate.getDate()?1:0)
+  );
+  const isMaturityCase = monthsUntilMaturity < 12;
+
+  // ---- Bonus setup ----
+  const docDate      = new Date(docYear, docMonth-1, docDay);
+  const fiscalEndDay = FISCAL_YEAR_END_DAYS[docYear] || 16;
+  const fiscalEndDate = new Date(docYear, 6, fiscalEndDay); // July
+  let startingBonusYear = docYear;
+  if (docDate > fiscalEndDate) startingBonusYear = docYear + 1;
+
+  const planCharts       = PLAN_BONUS_CHARTS[selectedPlanId] || PLAN_BONUS_CHARTS["342"];
+  const availableTermKeys = Object.keys(planCharts).map(Number).sort((a,b)=>b-a);
+  const termKey           = availableTermKeys.find(k=>policyTerm>=k) || availableTermKeys[availableTermKeys.length-1];
+  const termRates         = planCharts[termKey] || {};
+  const saOver1000        = sumAssured / 1000;
+
+  // ---- Bonus amount ----
+  // Bonus is counted up to: min(FUP, CalcDate) months from DOC in surrender case
+  // In maturity case:
+  //   FUP >= maturity date → full policyTerm years
+  //   FUP < maturity date  → up to FUP only
+  let vestedBonus = 0, interimBonus = 0;
+
+  if (isMaturityCase) {
+    const fupDate = new Date(fupYear, fupMonth-1, docDay);
+    const fupGteMaturity = fupDate >= maturityDate;
+    const bonusMonths = fupGteMaturity ? policyTerm * 12 : fullMonthsPaid;
+    const bonusYears  = bonusMonths / 12;
+    const b = calcBonus(bonusYears, startingBonusYear, termRates, saOver1000);
+    vestedBonus  = b.vested;
+    interimBonus = b.interim;
+  } else {
+    // Surrender: bonus up to min(FUP months from DOC, CalcDate months from DOC)
+    const calcMonthsFromDOC = Math.max(0,
+      (calcYear-docYear)*12 + (calcMonth-docMonth) - (calcDay<docDay?1:0)
+    );
+    const bonusMonths = Math.min(fullMonthsPaid, calcMonthsFromDOC);
+    const bonusYears  = bonusMonths / 12;
+    const b = calcBonus(bonusYears, startingBonusYear, termRates, saOver1000);
+    vestedBonus  = b.vested;
+    interimBonus = b.interim;
+  }
+
+  // ---- Core values ----
+  const paidUpSumAssured = (yearsPaid / policyTerm) * sumAssured;
+  const totalPaidUpValue = paidUpSumAssured + vestedBonus + interimBonus;
+
+  let grossValue, baseFactor, monthlyAdjustment;
+
+  if (isMaturityCase) {
+    grossValue        = sumAssured + vestedBonus + interimBonus;
+    baseFactor        = 1000;
+    monthlyAdjustment = 1.000;
+  } else {
+    const fullYearsRemaining = Math.floor(monthsUntilMaturity / 12);
+
+    const anniversaryThisYear = new Date(calcYear, docMonth-1, docDay);
+    const lastAnniversary     = calculationDate >= anniversaryThisYear
+      ? anniversaryThisYear
+      : new Date(calcYear-1, docMonth-1, docDay);
+
+    const monthsPastAnniversary = Math.max(0,
+      (calculationDate.getFullYear()-lastAnniversary.getFullYear())*12 +
+      (calculationDate.getMonth()-lastAnniversary.getMonth()) -
+      (calculationDate.getDate()<lastAnniversary.getDate()?1:0)
+    );
+
+    baseFactor        = YEARLY_FACTORS[Math.min(30, fullYearsRemaining)] || 0;
+    monthlyAdjustment = MONTHLY_FACTORS[Math.min(12, monthsPastAnniversary)] || 1;
+    grossValue        = totalPaidUpValue * (baseFactor * monthlyAdjustment) / 1000;
+  }
+
+  // ---- TDS ----
+  let tdsAmount = 0;
+  if (grossValue > totalPremiumsPaid) {
+    tdsAmount = (grossValue - totalPremiumsPaid) * 0.05;
+  }
+  const netValue = grossValue - tdsAmount;
+
+  // ---- Loan ----
+  const monthsSinceFUP = (calcYear*12+(calcMonth-1)) - (fupYear*12+(fupMonth-1));
+  const isReducedPaidUp = (monthsSinceFUP + (calcDay < docDay ? -1 : 0)) >= 6;
+  const loanPayable = Math.floor(grossValue * (isReducedPaidUp ? 0.85 : 0.90) / 100) * 100;
+
+  updateUI({
+    grossValue, netValue, paidUpSumAssured, vestedBonus, interimBonus,
+    totalPaidUpValue, tdsAmount, totalPremiumsPaid, fullMonthsPaid,
+    instCount, baseFactor, monthlyAdjustment, loanPayable,
+    isReducedPaidUp, isMaturityCase,
+    selectedPlanId, policyTerm, sumAssured, premiumPerInstalment,
+    docYear, docMonth, docDay, fupYear, fupMonth, calcYear, calcMonth, calcDay
+  });
+}
+
+// ============================================================
+// UPDATE UI
+// ============================================================
+function updateUI(r) {
+  const M = r.isMaturityCase;
+  const matBenefit = r.sumAssured + r.vestedBonus + r.interimBonus;
+
+  // Breakdown cards
+  document.getElementById('bPaidUp').textContent       = fmtCurrency(r.paidUpSumAssured);
+  document.getElementById('bVested').textContent       = fmtCurrency(r.vestedBonus);
+  document.getElementById('bVestedSub').textContent    = 'Announced bonus years (vested)';
+  document.getElementById('bInterimLabel').textContent = 'Interim Bonus';
+  document.getElementById('bInterim').textContent      = fmtCurrency(r.interimBonus);
+  document.getElementById('bInterimSub').textContent   = 'Unannounced year (prorated)';
+  document.getElementById('bPaidUpValueLabel').textContent = M ? 'Maturity Benefit' : 'Paid-up Value';
+  document.getElementById('bPaidUpValue').textContent      = fmtCurrency(M ? matBenefit : r.totalPaidUpValue);
+  document.getElementById('bPaidUpValueSub').textContent   = M ? 'Full SA + Total Bonus' : 'Paid-up SA + Total Bonus';
+  document.getElementById('bFactorLabel').textContent  = M ? 'Valuation' : 'Surrender Factor';
+  document.getElementById('bFactor').textContent       = M ? 'Maturity (Full SA)' : `${r.baseFactor.toFixed(2)} / ${r.monthlyAdjustment.toFixed(3)}`;
+  document.getElementById('bFactorSub').textContent    = M ? 'No discount applied' : 'Yearly / Monthly factor';
+  document.getElementById('bPremiums').textContent     = fmtCurrency(r.totalPremiumsPaid, 2);
+  document.getElementById('bPremiumsSub').textContent  = `${r.instCount} instalments × रू ${fmtCurrency(r.premiumPerInstalment)}`;
+  document.getElementById('breakdownSection').style.display = 'block';
+
+  // Result panel
+  document.getElementById('maturityBadge').style.display  = M ? 'inline-flex' : 'none';
+  document.getElementById('rGrossLabel').textContent = M ? 'Gross Maturity Benefit' : 'Gross Surrender Value';
+  document.getElementById('rGross').textContent      = fmtCurrency(r.grossValue, 2);
+  document.getElementById('rTDS').textContent        = '− ' + fmtCurrency(r.tdsAmount, 2);
+  document.getElementById('rNetLabel').textContent   = M ? 'Net Maturity Value' : 'Net Surrender Value';
+  document.getElementById('rNet').textContent        = fmtCurrency(r.netValue, 2);
+  document.getElementById('rNetSub').textContent     = M ? 'Final Maturity Payout' : 'Final Liquidation Amount';
+  document.getElementById('rLoan').textContent       = fmtCurrency(r.loanPayable, 2);
+  document.getElementById('rLoanBadge').textContent  = r.isReducedPaidUp ? 'Reduced Paid-up (85%)' : 'Inforce (90%)';
+
+  document.getElementById('resultPlaceholder').style.display = 'none';
+  const panel = document.getElementById('resultPanel');
+  panel.style.display = 'block';
+  const inner = panel.querySelector('.result-panel');
+  inner.classList.remove('animate-in');
+  void inner.offsetWidth;
+  inner.classList.add('animate-in');
+
+  // Print fields
+  const fmtDate = (y,m,d) => new Date(y,m-1,d).toLocaleDateString('en-GB');
+  document.getElementById('pHeading').textContent      = M ? 'Maturity / Loan Quotation' : 'Surrender / Loan Quotation';
+  document.getElementById('pCalcDate').textContent     = fmtDate(r.calcYear, r.calcMonth, r.calcDay);
+  document.getElementById('pDOC').textContent          = fmtDate(r.docYear, r.docMonth, r.docDay);
+  document.getElementById('pFUP').textContent          = fmtDate(r.fupYear, r.fupMonth, r.docDay);
+  document.getElementById('pPlanTerm').textContent     = `${r.selectedPlanId} / ${r.policyTerm}`;
+  document.getElementById('pMode').textContent         = paymentMode.substring(0,3).toUpperCase();
+  document.getElementById('pInstCount').textContent    = r.instCount;
+  document.getElementById('pPrmPaid').textContent      = fmtCurrency(r.totalPremiumsPaid, 2);
+  document.getElementById('pSA').textContent           = fmtCurrency(r.sumAssured, 2);
+  document.getElementById('pInstPrem').textContent     = fmtCurrency(r.premiumPerInstalment, 2);
+  document.getElementById('pPaidUpSA').textContent     = fmtCurrency(r.paidUpSumAssured, 2);
+  document.getElementById('pVested').textContent       = fmtCurrency(r.vestedBonus, 2);
+  document.getElementById('pInterimLabel').textContent = 'INTERIM BONUS';
+  document.getElementById('pInterim').textContent      = fmtCurrency(r.interimBonus, 2);
+  document.getElementById('pPaidUpValLabel').textContent = M ? 'MATURITY BENEFIT' : 'PAIDUP VALUE';
+  document.getElementById('pPaidUpVal').textContent    = fmtCurrency(M ? matBenefit : r.totalPaidUpValue, 2);
+  document.getElementById('pTDSLabel').textContent     = M ? 'TDS on Mat. Amt' : 'TDS on Surr. Amt';
+  document.getElementById('pTDS').textContent          = fmtCurrency(r.tdsAmount, 2);
+  document.getElementById('pNetLabel').textContent     = M ? 'NET MATURITY PAYABLE' : 'NET SV PAYABLE';
+  document.getElementById('pNetSV').textContent        = fmtCurrency(r.netValue, 2);
+  document.getElementById('pLoan').textContent         = fmtCurrency(r.loanPayable, 2);
+  document.getElementById('pDuration').textContent     = getPolicyDuration(r.fullMonthsPaid);
+
+  updatePremiumHint();
+}
+
+window.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
